@@ -1,0 +1,58 @@
+cmake_minimum_required(VERSION 3.14)
+project(semanticfusion2)
+
+set(CMAKE_CXX_STANDARD 14)
+
+find_package( Caffe REQUIRED )
+find_package(CUDA REQUIRED)
+find_package(Glog REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(OpenNI2 REQUIRED)
+
+include_directories(${CUDA_INCLUDE_DIRS})
+include_directories(${Caffe_INCLUDE_DIRS})
+include_directories(src/cnn_interface)
+include_directories(src/gui)
+include_directories(src/map_interface)
+include_directories(src/semantic_fusion)
+include_directories(src/semantic_fusion/CRF)
+include_directories(src/utilities)
+
+add_subdirectory(${ElasticFusion_DIR}/src ${ElasticFusion_DIR}/build)
+
+add_executable(semanticfusion2
+        src/cnn_interface/CaffeInterface.cpp
+        src/cnn_interface/CaffeInterface.h
+        src/gui/Gui.cpp
+        src/gui/Gui.h
+        src/gui/GuiCuda.h
+        src/map_interface/ElasticFusionCuda.h
+        src/map_interface/ElasticFusionInterface.cpp
+        src/map_interface/ElasticFusionInterface.h
+        src/semantic_fusion/CRF/densecrf.cpp
+        src/semantic_fusion/CRF/densecrf.h
+        src/semantic_fusion/CRF/fastmath.h
+        src/semantic_fusion/CRF/permutohedral.h
+        src/semantic_fusion/CRF/util.cpp
+        src/semantic_fusion/CRF/util.h
+        src/semantic_fusion/SemanticFusionCuda.h
+        src/semantic_fusion/SemanticFusionInterface.cpp
+        src/semantic_fusion/SemanticFusionInterface.h
+        src/utilities/Array.cpp
+        src/utilities/Array.h
+        src/utilities/JPEGLoader.h
+        src/utilities/LiveLogReader.cpp
+        src/utilities/LiveLogReader.h
+        src/utilities/LogReader.h
+        src/utilities/OpenNI2Interface.cpp
+        src/utilities/OpenNI2Interface.h
+        src/utilities/PNGLogReader.cpp
+        src/utilities/PNGLogReader.h
+        src/utilities/RawLogReader.cpp
+        src/utilities/RawLogReader.h
+        src/utilities/Stopwatch.h
+        src/utilities/ThreadMutexObject.h
+        src/utilities/Types.h
+        src/main.cpp)
+
+target_link_libraries(semanticfusion2 ${Caffe_LIBRARIES} )
