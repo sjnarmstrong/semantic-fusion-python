@@ -20,6 +20,7 @@
 #include "ElasticFusionCuda.h" 
 #include <utilities/Types.h>
 #include <random>
+#include <exception>
 
 #include <GL/glx.h>
 
@@ -30,7 +31,16 @@ float encode_colour(ClassColour rgb_colour) {
   return float(colour);
 }
 
-bool ElasticFusionInterface::Init(std::vector<ClassColour> class_colour_lookup) {
+bool ElasticFusionInterface::Init(std::vector<ClassColour> class_colour_lookup, bool no_gui /* = false*/) {
+    if (no_gui){
+        pangolin::Params windowParams;
+        windowParams.Set("SAMPLE_BUFFERS", 0);
+        windowParams.Set("SAMPLES", 0);
+        pangolin::CreateWindowAndBind("SemanticFusion", 1280, 800, windowParams);
+
+    }
+
+
   GLXContext context = glXGetCurrentContext();
   if (context == nullptr) {
     return false;
@@ -43,7 +53,7 @@ bool ElasticFusionInterface::Init(std::vector<ClassColour> class_colour_lookup) 
   elastic_fusion_.reset(new ElasticFusion(200, 35000, 5e-05, 1e-05, true,
                                           false,false,115,10,8,10));
                                           //false,false,115,10,8,100));
-  const int surfel_render_size = Resolution::getInstance().width() * 
+  const int surfel_render_size = Resolution::getInstance().width() *
                                   Resolution::getInstance().height();
   surfel_ids_.resize(surfel_render_size);
   initialised_ = true;

@@ -51,7 +51,7 @@ std::istream& operator>> (std::istream& is, ClassIdInput& o){
 }
 
 
-Gui::Gui(bool live_capture, std::vector<ClassColour> class_colour_lookup, const int segmentation_width, const int segmentation_height) 
+Gui::Gui(bool live_capture, std::vector<ClassColour> class_colour_lookup, const int segmentation_width, const int segmentation_height, const bool offscreen /*=False*/)
   : width_(1280)
   , height_(980)
   , segmentation_width_(segmentation_width)
@@ -63,6 +63,7 @@ Gui::Gui(bool live_capture, std::vector<ClassColour> class_colour_lookup, const 
   pangolin::Params window_params;
   window_params.Set("SAMPLE_BUFFERS", 0);
   window_params.Set("SAMPLES", 0);
+  if (offscreen) {window_params.Set("scheme", "nogui");}
   pangolin::CreateWindowAndBind("SemanticFusion", width_, height_, window_params);
   render_buffer_ = new pangolin::GlRenderBuffer(3840, 2160);
   color_texture_ = new GPUTexture(render_buffer_->width, render_buffer_->height, GL_RGBA32F, GL_LUMINANCE, GL_FLOAT, true);

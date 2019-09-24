@@ -65,10 +65,16 @@ public:
   void CalculateProjectedProbabilityMap(ElasticFusionInterface& map);
   void CalculateProjectedProbabilityMap(const std::unique_ptr<ElasticFusionInterface>& map);
 
+  void GetRenderedProbabilities(float** probs, int* ps1, int* ps2, int* ps3, int* ps4);
+
   void CRFUpdate(ElasticFusionInterface& map, const int iterations);
   void CRFUpdate(const std::unique_ptr<ElasticFusionInterface>& map, const int iterations);
 
   void SaveArgMaxPredictions(std::string& filename,const std::unique_ptr<ElasticFusionInterface>& map);
+  void GetGlobalMap(ElasticFusionInterface& map,
+                    float** xyz, int* v1s1, int* v1s2,
+                    unsigned char** rgb, int* v2s1, int* v2s2,
+                    float** pr, int* v3s1, int* v3s2);
   std::shared_ptr<caffe::Blob<float> > get_rendered_probability();
   std::shared_ptr<caffe::Blob<float> > get_class_max_gpu();
   int max_num_components() const;

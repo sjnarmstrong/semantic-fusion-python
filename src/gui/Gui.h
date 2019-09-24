@@ -37,7 +37,7 @@ struct ClassIdInput;
 class Gui {
 public:
   //enum SelectProbabilityMap {Books,Chairs,Floor};
-  Gui(bool live_capture,std::vector<ClassColour> class_colour_lookup, const int segmentation_width, const int segmentation_height);
+  Gui(bool live_capture,std::vector<ClassColour> class_colour_lookup, const int segmentation_width, const int segmentation_height, const bool offscreen=false);
   virtual ~Gui();
 
   void preCall();

@@ -36,13 +36,14 @@ public:
   , width_(640)
   , tracking_only_(false)
   {
-    Resolution::getInstance(width_, height_);
+      //Intrinsics are initialised later
+    //Resolution::getInstance(width_, height_);
     // Primesense intrinsics
-    Intrinsics::getInstance(528, 528, width_ / 2, height_ / 2);
+    //Intrinsics::getInstance(528, 528, width_ / 2, height_ / 2);
   }
   virtual ~ElasticFusionInterface();
 
-  virtual bool Init(std::vector<ClassColour> class_colour_lookup);
+  virtual bool Init(std::vector<ClassColour> class_colour_lookup, bool no_gui = false);
   virtual bool ProcessFrame(const ImagePtr rgb, const DepthPtr depth, const int64_t timestamp);
   virtual bool ProcessFrameNumpy(ImagePtr rgb_arr, int n_rgb, DepthPtr depth_arr, int n_depth, const long timestamp)
   {
@@ -89,6 +90,10 @@ public:
       elastic_fusion_->setTrackingOnly(tracking);
       tracking_only_ = tracking;
     }
+  }
+
+  ElasticFusion& getElasticFusionInstance(){
+      return *elastic_fusion_;
   }
 
 private:

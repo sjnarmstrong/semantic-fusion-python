@@ -82,6 +82,7 @@ void SemanticFusionInterface::CalculateProjectedProbabilityMap(ElasticFusionInte
             rendered_class_probabilities_gpu_->mutable_gpu_data());
 }
 
+
 void SemanticFusionInterface::CalculateProjectedProbabilityMap(const std::unique_ptr<ElasticFusionInterface>& map) {
     CalculateProjectedProbabilityMap(*map);
 }
@@ -179,7 +180,7 @@ void SemanticFusionInterface::PredictAndUpdateProbabilities(ImagePtr rgb_arr, in
     CHECK_EQ(num_classes_,caffe_probs->channels());
 
     if (return_probabilities){
-        std::cout<<"caffee output of num dims: "<<caffe_probs->shape().size()<<std::endl;
+        //std::cout<<"caffee output of num dims: "<<caffe_probs->shape().size()<<std::endl;
         const auto hn = caffe_probs->shape(0);
         const auto hc = caffe_probs->shape(1);
         const auto hh = caffe_probs->shape(2);
@@ -192,11 +193,11 @@ void SemanticFusionInterface::PredictAndUpdateProbabilities(ImagePtr rgb_arr, in
         *ps2 = hh;
         *ps1 = hw;
         auto res_probs = caffe_probs->cpu_data();
-        std::cout << "first 24 Predicted probs\n";
-        for (int loop=0; loop< 24; loop++){
-            std::cout << res_probs[loop] << ", ";
-        }
-        std::cout << std::endl;
+//        std::cout << "first 24 Predicted probs\n";
+//        for (int loop=0; loop< 24; loop++){
+//            std::cout << res_probs[loop] << ", ";
+//        }
+//        std::cout << std::endl;
 
 
         memcpy(*probs,res_probs , res_size*sizeof(float));
@@ -217,6 +218,25 @@ void SemanticFusionInterface::PredictAndUpdateProbabilities(ImagePtr rgb_arr, in
                               class_max_gpu_->mutable_gpu_data(),map_size);
     map.UpdateSurfelClassGpu(map_size,class_max_gpu_->gpu_data(),class_max_gpu_->gpu_data() + map_size,colour_threshold_);
 }
+
+void SemanticFusionInterface::GetRenderedProbabilities(float** probs, int* ps1, int* ps2, int* ps3, int* ps4){
+    const auto hn = rendered_class_probabilities_gpu_->shape(0);
+    const auto hc = rendered_class_probabilities_gpu_->shape(1);
+    const auto hh = rendered_class_probabilities_gpu_->shape(2);
+    const auto hw = rendered_class_probabilities_gpu_->shape(3);
+    const auto res_size = hn*hc*hh*hw;
+    *probs = (float *)malloc(res_size*sizeof(float));
+    assert (*probs != NULL);
+    *ps4 = hn;
+    *ps3 = hc;
+    *ps2 = hh;
+    *ps1 = hw;
+    auto res_probs = rendered_class_probabilities_gpu_->cpu_data();
+
+    memcpy(*probs,res_probs , res_size*sizeof(float));
+}
+
+
 
 
 void SemanticFusionInterface::CRFUpdate(ElasticFusionInterface& map, const int iterations){
@@ -263,45 +283,6 @@ void SemanticFusionInterface::CRFUpdate(ElasticFusionInterface& map, const int i
 
 void SemanticFusionInterface::CRFUpdate(const std::unique_ptr<ElasticFusionInterface>& map, const int iterations) {
     CRFUpdate(*map, iterations);
-//  float* surfel_map = map->GetMapSurfelsGpu();
-//  // We very inefficiently allocate and clear a chunk of memory for every CRF update
-//  float * my_surfels = new float[current_table_size_ * 12];
-//  cudaMemcpy(my_surfels,surfel_map, sizeof(float) * current_table_size_ * 12, cudaMemcpyDeviceToHost);
-//  // Get the semantic table on CPU and add as unary potentials
-//  float* prob_table = class_probabilities_gpu_->mutable_cpu_data();
-//
-//  std::vector<int> valid_ids;
-//  for (int i = 0; i < current_table_size_; ++i) {
-//    valid_ids.push_back(i);
-//  }
-//  std::vector<float> unary_potentials(valid_ids.size() * num_classes_);
-//  for(int i = 0; i < static_cast<int>(valid_ids.size()); ++i) {
-//    int id = valid_ids[i];
-//    for (int j = 0; j < num_classes_; ++j) {
-//       unary_potentials[i * num_classes_ + j] = -log(prob_table[j * max_components_ + id] + 1.0e-12);
-//    }
-//  }
-//  DenseCRF3D crf(valid_ids.size(),num_classes_,0.05,20,0.1);
-//  crf.setUnaryEnergy(unary_potentials.data());
-//  // Add pairwise energies
-//  crf.addPairwiseGaussian(my_surfels,3,valid_ids);
-//  crf.addPairwiseBilateral(my_surfels,10,valid_ids);
-//  // Finally read the values back to the probability table
-//  float* resulting_probs = crf.runInference(iterations, 1.0);
-//  for (int i = 0; i < static_cast<int>(valid_ids.size()); ++i) {
-//    for (int j = 0; j < num_classes_; ++j) {
-//	  const int id = valid_ids[i];
-//      // Sometimes it returns nan resulting probs... filter these out
-//      if (resulting_probs[i * num_classes_ + j] > 0.0 && resulting_probs[i * num_classes_ + j] < 1.0) {
-//        prob_table[j * max_components_ + id] = resulting_probs[i * num_classes_ + j];
-//      }
-//    }
-//  }
-//  const float* gpu_prob_table = class_probabilities_gpu_->gpu_data();
-//  float* gpu_max_map = class_max_gpu_->mutable_gpu_data();
-//  updateMaxClass(current_table_size_,gpu_prob_table,num_classes_,gpu_max_map,max_components_);
-//  map->UpdateSurfelClassGpu(max_components_,class_max_gpu_->gpu_data(),class_max_gpu_->gpu_data() + max_components_,colour_threshold_);
-//  delete [] my_surfels;
 }
 
 void SemanticFusionInterface::SaveArgMaxPredictions(std::string& filename,const std::unique_ptr<ElasticFusionInterface>& map) {
@@ -332,4 +313,89 @@ void SemanticFusionInterface::SaveArgMaxPredictions(std::string& filename,const 
     }
   }
   cv::imwrite(filename,argmax_image);
+}
+
+
+void SemanticFusionInterface::GetGlobalMap(ElasticFusionInterface& map,
+                                           float** xyz, int* v1s1, int* v1s2,
+                                           unsigned char** rgb, int* v2s1, int* v2s2,
+                                           float** pr, int* v3s1, int* v3s2) {
+    ElasticFusion& ef = map.getElasticFusionInstance();
+
+    Eigen::Vector4f * mapData = ef.getGlobalModel().downloadMap();
+    float confidenceThreshold = ef.getConfidenceThreshold();
+    unsigned int global_model_size = ef.getGlobalModel().lastCount();
+
+    int num_classes = class_probabilities_gpu_->shape(2);
+
+    auto xyz_hold = (float *)malloc(sizeof(float)*3*global_model_size);
+    auto rgb_hold = (unsigned char *)malloc(sizeof(unsigned char)*3*global_model_size);
+    auto pr_hold = (float *)malloc(sizeof(float)*num_classes*global_model_size);
+
+
+    if (rgb_hold == nullptr || xyz_hold == nullptr || pr_hold == nullptr) {
+        free(xyz_hold);
+        free(rgb_hold);
+        free(pr_hold);
+        throw std::bad_alloc();
+    }
+    int xyz_hold_end = 0;
+    int prob_hold_end = 0;
+    const float* pr_data = class_probabilities_gpu_->cpu_data();
+
+
+
+
+    for(unsigned int i = 0; i < global_model_size; i++)
+    {
+        Eigen::Vector4f pos = mapData[(i * 3) + 0];
+
+        if(pos[3] > confidenceThreshold) {
+
+            for(int j = 0; j < num_classes; j++){
+                pr_hold[prob_hold_end*num_classes+j] = pr_data[j*max_components_ + i];
+            }
+            prob_hold_end+=1;
+
+            Eigen::Vector4f col = mapData[(i * 3) + 1];
+
+            unsigned char r = int(col[0]) >> 16 & 0xFF;
+            unsigned char g = int(col[0]) >> 8 & 0xFF;
+            unsigned char b = int(col[0]) & 0xFF;
+
+            float value;
+            memcpy (&xyz_hold[xyz_hold_end], &pos[0], sizeof (float));
+            rgb_hold[xyz_hold_end++] = r;
+
+            memcpy (&xyz_hold[xyz_hold_end], &pos[0], sizeof (float));
+            rgb_hold[xyz_hold_end++] = g;
+
+            memcpy (&xyz_hold[xyz_hold_end], &pos[0], sizeof (float));
+            rgb_hold[xyz_hold_end++] = b;
+        }
+
+    }
+    xyz_hold = (float *)realloc(xyz_hold, sizeof(float)*xyz_hold_end);
+    rgb_hold = (unsigned char *)realloc(rgb_hold, sizeof(unsigned char)*xyz_hold_end);
+    pr_hold = (float *)realloc(pr_hold, sizeof(float)*prob_hold_end*num_classes);
+
+    if (rgb_hold == nullptr || xyz_hold == nullptr || pr_hold == nullptr) {
+        free(xyz_hold);
+        free(rgb_hold);
+        free(pr_hold);
+        throw std::bad_alloc();
+    }
+
+    *xyz = xyz_hold;
+    *v1s1 = xyz_hold_end;
+    *v1s2 = 3;
+
+    *rgb = rgb_hold;
+    *v2s1 = xyz_hold_end;
+    *v2s2 = 3;
+
+    *pr = pr_hold;
+    *v3s1 = num_classes;
+    *v3s2 = prob_hold_end;
+
 }

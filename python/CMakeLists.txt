@@ -1,30 +1,30 @@
 find_package(SWIG REQUIRED)
-find_package(PythonLibs REQUIRED)
 find_package ( PythonInterp REQUIRED )
+find_package(PythonLibs REQUIRED)
 find_package ( NumPy REQUIRED )
 INCLUDE(${SWIG_USE_FILE})
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 #add_subdirectory(semantic_fusion)
+if(NOT DEFINED PYTHON_MODULE_PATH)
 
+    execute_process ( COMMAND ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}' ) )"
+            OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
+            OUTPUT_STRIP_TRAILING_WHITESPACE )
+    #execute_process ( COMMAND ${PYTHON_EXECUTABLE} -c "import site; print(site.getsitepackages()[0])"
+    #        OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
+    #        OUTPUT_STRIP_TRAILING_WHITESPACE )
 
+    get_filename_component ( _ABS_PYTHON_MODULE_PATH ${_ABS_PYTHON_MODULE_PATH} ABSOLUTE )
+    file ( RELATIVE_PATH _REL_PYTHON_MODULE_PATH ${CMAKE_INSTALL_PREFIX} ${_ABS_PYTHON_MODULE_PATH} )
 
+    set ( PYTHON_MODULE_PATH
+         ${_REL_PYTHON_MODULE_PATH}
+       )
 
+endif(NOT DEFINED PYTHON_MODULE_PATH)
 
-#execute_process ( COMMAND ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}' ) )"
-#        OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
-#        OUTPUT_STRIP_TRAILING_WHITESPACE )
-execute_process ( COMMAND ${PYTHON_EXECUTABLE} -c "import site; print(site.getsitepackages()[0])"
-        OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
-        OUTPUT_STRIP_TRAILING_WHITESPACE )
-
-get_filename_component ( _ABS_PYTHON_MODULE_PATH ${_ABS_PYTHON_MODULE_PATH} ABSOLUTE )
-file ( RELATIVE_PATH _REL_PYTHON_MODULE_PATH ${CMAKE_INSTALL_PREFIX} ${_ABS_PYTHON_MODULE_PATH} )
-
-set ( PYTHON_MODULE_PATH
-     ${_REL_PYTHON_MODULE_PATH}
-   )
-
+message("Setting module install path to ${PYTHON_MODULE_PATH}")
 
 function(add_swig_item swig_file_name swig_folder_name)
     set_property(SOURCE ${swig_folder_name}/${swig_file_name}.i PROPERTY CPLUSPLUS ON)

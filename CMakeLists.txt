@@ -25,9 +25,9 @@ find_package(CUDA REQUIRED)
 find_package(Glog REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(OpenNI2 REQUIRED)
-find_package( Caffe REQUIRED )
 
-add_subdirectory(${ElasticFusion_DIR}/src ${ElasticFusion_DIR}/build)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/deps/ElasticFusionCore")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/deps/caffe_semanticfusion")
 
 file(GLOB_RECURSE srcs src/**/*.cpp)
 file(GLOB_RECURSE cuda src/*.cu)
@@ -68,8 +68,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         ${CUDA_INCLUDE_DIRS}
         ${GLOG_INCLUDE_DIR}
         ${OPENNI2_INCLUDE_DIR}
-        ${Caffe_INCLUDE_DIRS}
-        ${ElasticFusion_DIR}/src
+        ${libefusion_SOURCE_DIR}
         )
 
 
