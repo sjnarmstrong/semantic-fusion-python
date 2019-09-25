@@ -16,6 +16,7 @@
 import_array();
 %}
 
+
 %numpy_typemaps(unsigned short             , NPY_USHORT    , int)
 %numpy_typemaps(unsigned char             , NPY_UBYTE    , int)
 %apply (unsigned char* IN_ARRAY1, int DIM1){(ImagePtr rgb_arr, int n_rgb)};
@@ -25,7 +26,6 @@ import_array();
 %apply (float** ARGOUTVIEWM_FARRAY2, int *DIM1, int *DIM2) {(float** pr, int* v3s1, int* v3s2)}
 %apply (unsigned char** ARGOUTVIEWM_FARRAY2, int *DIM1, int *DIM2) {(unsigned char** rgb, int* v2s1, int* v2s2)}
 
-
+//%feature("kwargs")
+//%feature("autodoc", "2")
 %include semantic_fusion/SemanticFusionInterface.h
-
-

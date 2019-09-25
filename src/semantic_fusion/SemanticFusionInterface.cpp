@@ -319,18 +319,30 @@ void SemanticFusionInterface::SaveArgMaxPredictions(std::string& filename,const 
 void SemanticFusionInterface::GetGlobalMap(ElasticFusionInterface& map,
                                            float** xyz, int* v1s1, int* v1s2,
                                            unsigned char** rgb, int* v2s1, int* v2s2,
-                                           float** pr, int* v3s1, int* v3s2) {
+                                           float** pr, int* v3s1, int* v3s2)
+{
+
     ElasticFusion& ef = map.getElasticFusionInstance();
-
-    Eigen::Vector4f * mapData = ef.getGlobalModel().downloadMap();
+    auto globalModel = &ef.getGlobalModel();
     float confidenceThreshold = ef.getConfidenceThreshold();
-    unsigned int global_model_size = ef.getGlobalModel().lastCount();
+    Eigen::Vector4f * mapData = globalModel->downloadMap();
 
+    int validCount = 0;
     int num_classes = class_probabilities_gpu_->shape(2);
 
-    auto xyz_hold = (float *)malloc(sizeof(float)*3*global_model_size);
-    auto rgb_hold = (unsigned char *)malloc(sizeof(unsigned char)*3*global_model_size);
-    auto pr_hold = (float *)malloc(sizeof(float)*num_classes*global_model_size);
+    for(unsigned int i = 0; i < globalModel->lastCount(); i++)
+    {
+        Eigen::Vector4f pos = mapData[(i * 3) + 0];
+
+        if(pos[3] > confidenceThreshold)
+        {
+            validCount++;
+        }
+    }
+
+    auto xyz_hold = (float *)malloc(sizeof(float)*6*validCount);
+    auto rgb_hold = (unsigned char *)malloc(sizeof(unsigned char)*3*validCount);
+    auto pr_hold = (float *)malloc(sizeof(float)*num_classes*validCount);
 
 
     if (rgb_hold == nullptr || xyz_hold == nullptr || pr_hold == nullptr) {
@@ -339,63 +351,169 @@ void SemanticFusionInterface::GetGlobalMap(ElasticFusionInterface& map,
         free(pr_hold);
         throw std::bad_alloc();
     }
-    int xyz_hold_end = 0;
-    int prob_hold_end = 0;
+
     const float* pr_data = class_probabilities_gpu_->cpu_data();
 
 
+    int hold_end = 0;
 
-
-    for(unsigned int i = 0; i < global_model_size; i++)
+    for(unsigned int i = 0; i < globalModel->lastCount(); i++)
     {
         Eigen::Vector4f pos = mapData[(i * 3) + 0];
 
-        if(pos[3] > confidenceThreshold) {
-
-            for(int j = 0; j < num_classes; j++){
-                pr_hold[prob_hold_end*num_classes+j] = pr_data[j*max_components_ + i];
-            }
-            prob_hold_end+=1;
+        if(pos[3] > confidenceThreshold)
+        {
+            unsigned int offset_1 = hold_end+validCount;
+            unsigned int offset_2 = offset_1+validCount;
+            unsigned int offset_3 = offset_2+validCount;
+            unsigned int offset_4 = offset_3+validCount;
+            unsigned int offset_5 = offset_4+validCount;
 
             Eigen::Vector4f col = mapData[(i * 3) + 1];
+            Eigen::Vector4f nor = mapData[(i * 3) + 2];
+
+            nor[0] *= -1;
+            nor[1] *= -1;
+            nor[2] *= -1;
+
+            float value;
+            memcpy (&value, &pos[0], sizeof (float));
+            xyz_hold[hold_end] = value;
+
+            memcpy (&value, &pos[1], sizeof (float));
+            xyz_hold[offset_1] = value;
+
+            memcpy (&value, &pos[2], sizeof (float));
+            xyz_hold[offset_2] = value;
 
             unsigned char r = int(col[0]) >> 16 & 0xFF;
             unsigned char g = int(col[0]) >> 8 & 0xFF;
             unsigned char b = int(col[0]) & 0xFF;
 
-            float value;
-            memcpy (&xyz_hold[xyz_hold_end], &pos[0], sizeof (float));
-            rgb_hold[xyz_hold_end++] = r;
+            rgb_hold[hold_end] = r;
+            rgb_hold[offset_1] = g;
+            rgb_hold[offset_2] = b;
 
-            memcpy (&xyz_hold[xyz_hold_end], &pos[0], sizeof (float));
-            rgb_hold[xyz_hold_end++] = g;
+            memcpy (&value, &nor[0], sizeof (float));
+            xyz_hold[offset_3] = value;
 
-            memcpy (&xyz_hold[xyz_hold_end], &pos[0], sizeof (float));
-            rgb_hold[xyz_hold_end++] = b;
+            memcpy (&value, &nor[1], sizeof (float));
+            xyz_hold[offset_4] = value;
+
+            memcpy (&value, &nor[2], sizeof (float));
+            xyz_hold[offset_5] = value;
+
+            // memcpy (&value, &nor[3], sizeof (float)); Surfel radius
+
+            for(int j = 0; j < num_classes; j++){
+                pr_hold[j * validCount + hold_end] = pr_data[j * max_components_ + i];
+            }
+            hold_end++;
         }
-
     }
-    xyz_hold = (float *)realloc(xyz_hold, sizeof(float)*xyz_hold_end);
-    rgb_hold = (unsigned char *)realloc(rgb_hold, sizeof(unsigned char)*xyz_hold_end);
-    pr_hold = (float *)realloc(pr_hold, sizeof(float)*prob_hold_end*num_classes);
 
-    if (rgb_hold == nullptr || xyz_hold == nullptr || pr_hold == nullptr) {
-        free(xyz_hold);
-        free(rgb_hold);
-        free(pr_hold);
-        throw std::bad_alloc();
-    }
 
     *xyz = xyz_hold;
-    *v1s1 = xyz_hold_end;
-    *v1s2 = 3;
+    *v1s1 = hold_end;
+    *v1s2 = 6;
 
     *rgb = rgb_hold;
-    *v2s1 = xyz_hold_end;
+    *v2s1 = hold_end;
     *v2s2 = 3;
 
     *pr = pr_hold;
-    *v3s1 = num_classes;
-    *v3s2 = prob_hold_end;
+    *v3s1 = hold_end;
+    *v3s2 = num_classes;
 
+    delete [] mapData;
 }
+
+//void SemanticFusionInterface::GetGlobalMap(ElasticFusionInterface& map,
+//                                           float** xyz, int* v1s1, int* v1s2,
+//                                           unsigned char** rgb, int* v2s1, int* v2s2,
+//                                           float** pr, int* v3s1, int* v3s2) {
+//    ElasticFusion& ef = map.getElasticFusionInstance();
+//
+//    Eigen::Vector4f * mapData = ef.getGlobalModel().downloadMap();
+//    float confidenceThreshold = ef.getConfidenceThreshold();
+//    unsigned int global_model_size = ef.getGlobalModel().lastCount();
+//
+//    int num_classes = class_probabilities_gpu_->shape(2);
+//
+//    int validCount = 0;
+//
+//    for(unsigned int i = 0; i < global_model_size; i++)
+//    {
+//        Eigen::Vector4f pos = mapData[(i * 3) + 0];
+//
+//        if(pos[3] > confidenceThreshold)
+//        {
+//            validCount++;
+//        }
+//    }
+//
+//
+//    auto xyz_hold = (float *)malloc(sizeof(float)*3*validCount);
+//    auto rgb_hold = (unsigned char *)malloc(sizeof(unsigned char)*3*validCount);
+//    auto pr_hold = (float *)malloc(sizeof(float)*num_classes*validCount);
+//
+//
+//    if (rgb_hold == nullptr || xyz_hold == nullptr || pr_hold == nullptr) {
+//        free(xyz_hold);
+//        free(rgb_hold);
+//        free(pr_hold);
+//        throw std::bad_alloc();
+//    }
+//    int xyz_hold_end = 0;
+//    int prob_hold_end = 0;
+//    const float* pr_data = class_probabilities_gpu_->cpu_data();
+//
+//
+//    for(unsigned int i = 0; i < global_model_size; i++)
+//    {
+//        Eigen::Vector4f pos = mapData[(i * 3) + 0];
+//
+//        if(pos[3] > confidenceThreshold) {
+//
+//            for(int j = 0; j < num_classes; j++){
+//                pr_hold[prob_hold_end*num_classes+j] = pr_data[j*max_components_ + i];
+//            }
+//            prob_hold_end+=1;
+//
+//            Eigen::Vector4f col = mapData[(i * 3) + 1];
+//
+//            unsigned char r = int(col[0]) >> 16 & 0xFF;
+//            unsigned char g = int(col[0]) >> 8 & 0xFF;
+//            unsigned char b = int(col[0]) & 0xFF;
+//
+//            float value;
+//            memcpy (&value, &pos[0], sizeof (float));
+//            xyz_hold[xyz_hold_end] = value;
+//            rgb_hold[xyz_hold_end++] = r;
+//
+//            memcpy (&value, &pos[0], sizeof (float));
+//            xyz_hold[xyz_hold_end] = value;
+//            rgb_hold[xyz_hold_end++] = g;
+//
+//            memcpy (&value, &pos[0], sizeof (float));
+//            xyz_hold[xyz_hold_end] = value;
+//            rgb_hold[xyz_hold_end++] = b;
+//        }
+//
+//    }
+//
+//    *xyz = xyz_hold;
+//    *v1s1 = xyz_hold_end;
+//    *v1s2 = 3;
+//
+//    *rgb = rgb_hold;
+//    *v2s1 = xyz_hold_end;
+//    *v2s2 = 3;
+//
+//    *pr = pr_hold;
+//    *v3s1 = num_classes;
+//    *v3s2 = prob_hold_end;
+//
+//    delete [] mapData;
+//
+//}

@@ -43,7 +43,24 @@ public:
   }
   virtual ~ElasticFusionInterface();
 
-  virtual bool Init(std::vector<ClassColour> class_colour_lookup, bool no_gui = false);
+  virtual bool Init(std::vector<ClassColour> class_colour_lookup,
+                    int timeDelta = 200,
+                    int countThresh = 35000,
+                    float errThresh = 5e-05,
+                    float covThresh = 1e-05,
+                    bool closeLoops = true,
+                    bool iclnuim = false,
+                    bool reloc = false,
+                    float photoThresh = 115,
+                    float confidence = 10,
+                    float depthCut = 8,
+                    float icpThresh = 10,
+                    bool fastOdom = false,
+                    float fernThresh = 0.3095,
+                    bool so3 = true,
+                    bool frameToFrameRGB = false,
+                    std::string fileName = ""
+  );
   virtual bool ProcessFrame(const ImagePtr rgb, const DepthPtr depth, const int64_t timestamp);
   virtual bool ProcessFrameNumpy(ImagePtr rgb_arr, int n_rgb, DepthPtr depth_arr, int n_depth, const long timestamp)
   {

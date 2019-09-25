@@ -31,14 +31,31 @@ float encode_colour(ClassColour rgb_colour) {
   return float(colour);
 }
 
-bool ElasticFusionInterface::Init(std::vector<ClassColour> class_colour_lookup, bool no_gui /* = false*/) {
-    if (no_gui){
-        pangolin::Params windowParams;
-        windowParams.Set("SAMPLE_BUFFERS", 0);
-        windowParams.Set("SAMPLES", 0);
-        pangolin::CreateWindowAndBind("SemanticFusion", 1280, 800, windowParams);
-
-    }
+bool ElasticFusionInterface::Init(std::vector<ClassColour> class_colour_lookup,
+         int timeDelta,
+         int countThresh,
+         float errThresh,
+         float covThresh,
+         bool closeLoops,
+         bool iclnuim,
+         bool reloc,
+         float photoThresh,
+         float confidence,
+         float depthCut,
+         float icpThresh,
+         bool fastOdom,
+         float fernThresh,
+         bool so3,
+         bool frameToFrameRGB,
+         std::string fileName
+) {
+//    if (no_gui){
+//        pangolin::Params windowParams;
+//        windowParams.Set("SAMPLE_BUFFERS", 0);
+//        windowParams.Set("SAMPLES", 0);
+//        pangolin::CreateWindowAndBind("SemanticFusion", 1280, 800, windowParams);
+//
+//    }
 
 
   GLXContext context = glXGetCurrentContext();
@@ -50,8 +67,22 @@ bool ElasticFusionInterface::Init(std::vector<ClassColour> class_colour_lookup, 
   // can be turned to 100, as in the commented line below. However, the code
   // in elasticfusion has also been modified to ignore a 16 pixel border of the
   // RGB residual, which allows some RGB tracking while also ignoring the border.
-  elastic_fusion_.reset(new ElasticFusion(200, 35000, 5e-05, 1e-05, true,
-                                          false,false,115,10,8,10));
+  elastic_fusion_.reset(new ElasticFusion(timeDelta,
+     countThresh,
+     errThresh,
+     covThresh,
+     closeLoops,
+     iclnuim,
+     reloc,
+     photoThresh,
+     confidence,
+     depthCut,
+     icpThresh,
+     fastOdom,
+     fernThresh,
+     so3,
+     frameToFrameRGB,
+     fileName));
                                           //false,false,115,10,8,100));
   const int surfel_render_size = Resolution::getInstance().width() *
                                   Resolution::getInstance().height();
