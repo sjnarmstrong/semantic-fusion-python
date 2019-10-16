@@ -61,11 +61,45 @@ public:
                     bool frameToFrameRGB = false,
                     std::string fileName = ""
   );
-  virtual bool ProcessFrame(const ImagePtr rgb, const DepthPtr depth, const int64_t timestamp);
-  virtual bool ProcessFrameNumpy(ImagePtr rgb_arr, int n_rgb, DepthPtr depth_arr, int n_depth, const long timestamp)
+  virtual bool ProcessFrame(const ImagePtr rgb,
+                            const DepthPtr depth,
+                            const int64_t timestamp,
+                            const Eigen::Matrix4f * inPose = 0,
+                            const float weightMultiplier = 1.f,
+                            const bool bootstrap = false);
+  virtual bool ProcessFrameNumpy(ImagePtr rgb_arr, int n_rgb,
+                                 DepthPtr depth_arr, int n_depth,
+                                 const long timestamp,
+                                 float * pose = 0,
+                                 int n_pose_x = 0,
+                                 int n_pose_y = 0,
+                                 const float weightMultiplier = 1.f,
+                                 const bool bootstrap = false)
   {
-      return ProcessFrame(rgb_arr, depth_arr, timestamp);
+      Eigen::Matrix4f *inPose = nullptr;
+      if (n_pose_x == 4 && n_pose_y == 4) {
+          inPose = new Eigen::Matrix4f(Eigen::Map<Eigen::Matrix<float,4,4, Eigen::RowMajor>>(pose));
+          // std::cout << "Detected inpose "<<*inPose<<std::endl;
+
+      } else if (n_pose_x != 0 || n_pose_y != 0) {
+          std::cout << "Pose should be a 4x4 array skipping the provided pose!!"<<std::endl;
+      }
+      auto ret = ProcessFrame(rgb_arr, depth_arr, timestamp, inPose, weightMultiplier, bootstrap);
+      delete inPose;
+      return ret;
   }
+
+  void getCurrentPose(float ** out_pose, int * d_0, int * d_1){
+      auto curr_pose = elastic_fusion_->getCurrPose();
+//      std::cout << "CurrPose "<<curr_pose<<std::endl;
+      *out_pose = (float *)malloc(4*4*sizeof(float));
+      assert (*out_pose != NULL);
+      *d_0 = 4;
+      *d_1 = 4;
+//      std::cout << "Starting cpy "<< curr_pose.size()<<std::endl;
+      memcpy(*out_pose,curr_pose.data(),4*4 * sizeof(float));
+  }
+
   int height() const { return height_; }
   int width() const { return width_; }
 

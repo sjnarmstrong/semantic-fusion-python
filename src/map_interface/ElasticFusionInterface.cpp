@@ -108,10 +108,15 @@ int* ElasticFusionInterface::GetDeletedSurfelIdsGpu() {
   return nullptr;
 }
 
-bool ElasticFusionInterface::ProcessFrame(const ImagePtr rgb, const DepthPtr depth, const int64_t timestamp) {
+bool ElasticFusionInterface::ProcessFrame(const ImagePtr rgb,
+                                          const DepthPtr depth,
+                                          const int64_t timestamp,
+                                          const Eigen::Matrix4f * inPose /* = 0 */,
+                                          const float weightMultiplier /* = 1.f */,
+                                          const bool bootstrap /* = false */) {
   if (elastic_fusion_) {
 //      std::cout << "rgb[460000]" << (int)rgb[460000] <<std::endl;
-    elastic_fusion_->processFrame(rgb,depth,timestamp);
+    elastic_fusion_->processFrame(rgb,depth,timestamp, inPose, weightMultiplier, bootstrap);
     if (elastic_fusion_->getLost()) {
       return false;
     }
