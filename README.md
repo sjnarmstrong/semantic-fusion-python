@@ -7,3 +7,5 @@ https://bitbucket.org/dysonroboticslab/semanticfusion/src/master/
 for installation instructions and more details. Once the dependancies are setup the system can be installed with cmake.
 
 This project is a dependancy for the 3D-scene-tester-lib. Details of installation can be found in the dockerfile.
+
+Note all rights and licences are reserved to the origional authors of this project.
